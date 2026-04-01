@@ -129,19 +129,19 @@ pub enum ApiError {
 impl ApiClient {
     pub fn new(api_key: Option<String>, base_url: Option<String>, model: Option<String>) -> Self {
         let api_key = api_key
-            .or_else(|| std::env::var("ANTHROPIC_API_KEY").ok())
             .or_else(|| std::env::var("CODEANY_API_KEY").ok())
+            .or_else(|| std::env::var("ANTHROPIC_API_KEY").ok())
             .unwrap_or_default();
 
         let base_url = base_url
-            .or_else(|| std::env::var("ANTHROPIC_BASE_URL").ok())
             .or_else(|| std::env::var("CODEANY_BASE_URL").ok())
+            .or_else(|| std::env::var("ANTHROPIC_BASE_URL").ok())
             .unwrap_or_else(|| DEFAULT_BASE_URL.to_string());
 
         let model = model
-            .or_else(|| std::env::var("ANTHROPIC_MODEL").ok())
             .or_else(|| std::env::var("CODEANY_MODEL").ok())
-            .unwrap_or_else(|| "claude-sonnet-4-6-20250514".to_string());
+            .or_else(|| std::env::var("ANTHROPIC_MODEL").ok())
+            .unwrap_or_else(|| "sonnet-4-6".to_string());
 
         let timeout_ms: u64 = std::env::var("API_TIMEOUT_MS")
             .ok()
