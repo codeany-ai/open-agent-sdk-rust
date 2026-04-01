@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Open Agent SDK - Chat</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #f9fafb;
+  color: #1a1a1a;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header */
+.header {
+  padding: 16px 24px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.header h1 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #111;
+}
+.header .actions {
+  display: flex;
+  gap: 8px;
+}
+.btn-icon {
+  width: 36px; height: 36px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  color: #666;
+  transition: all 0.15s;
+}
+.btn-icon:hover { background: #f3f4f6; border-color: #d1d5db; }
+
+/* Chat area */
+.chat-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  max-width: 800px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* Welcome screen */
+.welcome {
+  text-align: center;
+  padding: 80px 20px 40px;
+}
+.welcome h2 {
+  font-size: 28px;
+  font-weight: 600;
+  margin-bottom: 32px;
+  color: #111;
+}
+.suggestions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.suggestion {
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  cursor: pointer;
+  font-size: 14px;
+  color: #555;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.suggestion:hover { border-color: #c4c4c4; background: #f9fafb; }
+
+/* Messages */
+.message { margin-bottom: 20px; animation: fadeIn 0.2s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+.message-user {
+  display: flex;
+  justify-content: flex-end;
+}
+.message-user .bubble {
+  background: #111;
+  color: #fff;
+  padding: 10px 16px;
+  border-radius: 18px 18px 4px 18px;
+  max-width: 70%;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.message-assistant {
+  padding-left: 4px;
+}
+.message-assistant .text-content {
+  font-size: 15px;
+  line-height: 1.7;
+  color: #1a1a1a;
+  max-width: 100%;
+}
+.message-assistant .text-content p { margin-bottom: 8px; }
+.message-assistant .text-content strong { font-weight: 600; }
+.message-assistant .text-content code {
+  background: #f3f4f6;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: 'SF Mono', Monaco, monospace;
+  font-size: 13px;
+}
+.message-assistant .text-content pre {
+  background: #1e1e1e;
+  color: #d4d4d4;
+  padding: 12px 16px;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 8px 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.message-assistant .text-content pre code {
+  background: none;
+  padding: 0;
+  color: inherit;
+}
+
+/* Tool calls */
+.tool-call {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 10px 14px;
+  margin: 8px 0;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.tool-call .tool-icon {
+  width: 28px; height: 28px;
+  border-radius: 6px;
+  background: #f3f4f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+.tool-call .tool-name {
+  font-weight: 600;
+  color: #374151;
+  margin-right: 6px;
+}
+.tool-call .tool-input {
+  color: #9ca3af;
+  font-family: 'SF Mono', Monaco, monospace;
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.tool-call.tool-error { border-color: #fecaca; background: #fef2f2; }
+.tool-call.tool-error .tool-icon { background: #fee2e2; }
+
+.tool-result-output {
+  background: #f9fafb;
+  border-left: 3px solid #e5e7eb;
+  margin: 0 0 8px 36px;
+  padding: 8px 12px;
+  border-radius: 0 8px 8px 0;
+  font-size: 12px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+.tool-result-output pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-all;
+  font-family: 'SF Mono', Monaco, monospace;
+  font-size: 12px;
+  color: #374151;
+  background: none;
+  padding: 0;
+}
+
+/* Thinking */
+.thinking-block {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 12px;
+  padding: 10px 14px;
+  margin: 8px 0;
+  font-size: 13px;
+  color: #92400e;
+  font-style: italic;
+}
+
+/* Result banner */
+.result-banner {
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  border-radius: 12px;
+  padding: 10px 16px;
+  margin: 12px 0;
+  font-size: 14px;
+  color: #065f46;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.result-banner .check { font-size: 16px; }
+.result-banner .stats {
+  color: #047857;
+  font-size: 13px;
+}
+
+/* Error */
+.error-banner {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+  padding: 10px 16px;
+  margin: 12px 0;
+  font-size: 14px;
+  color: #991b1b;
+}
+
+/* Typing indicator */
+.typing {
+  display: flex;
+  gap: 4px;
+  padding: 8px 0;
+}
+.typing span {
+  width: 6px; height: 6px;
+  background: #9ca3af;
+  border-radius: 50%;
+  animation: bounce 1.2s infinite;
+}
+.typing span:nth-child(2) { animation-delay: 0.2s; }
+.typing span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes bounce {
+  0%, 80%, 100% { transform: translateY(0); }
+  40% { transform: translateY(-6px); }
+}
+
+/* Input area */
+.input-area {
+  padding: 16px 24px 24px;
+  background: #fff;
+  border-top: 1px solid #e5e7eb;
+}
+.input-wrapper {
+  max-width: 800px;
+  margin: 0 auto;
+  position: relative;
+}
+.input-box {
+  width: 100%;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 14px 52px 14px 16px;
+  font-size: 15px;
+  font-family: inherit;
+  outline: none;
+  resize: none;
+  min-height: 52px;
+  max-height: 200px;
+  line-height: 1.5;
+  transition: border-color 0.15s;
+  background: #fff;
+}
+.input-box:focus { border-color: #a3a3a3; }
+.input-box::placeholder { color: #9ca3af; }
+.input-box:disabled { background: #f9fafb; color: #9ca3af; }
+
+.send-btn {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  border: none;
+  background: #111;
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  transition: all 0.15s;
+}
+.send-btn:hover { background: #333; }
+.send-btn:disabled { background: #d1d5db; cursor: not-allowed; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Open Agent SDK</h1>
+  <div class="actions">
+    <button class="btn-icon" onclick="newSession()" title="New session">+</button>
+  </div>
+</div>
+
+<div class="chat-container" id="chat">
+  <div class="welcome" id="welcome">
+    <h2>What can I do for you?</h2>
+    <div class="suggestions">
+      <div class="suggestion" onclick="sendSuggestion('List all Rust files in this project')">📁 List Rust files</div>
+      <div class="suggestion" onclick="sendSuggestion('Read Cargo.toml and explain the dependencies')">📄 Read Cargo.toml</div>
+      <div class="suggestion" onclick="sendSuggestion('Count lines of code in the src directory')">📊 Count lines</div>
+      <div class="suggestion" onclick="sendSuggestion('What is my Rust version and OS?')">💻 System info</div>
+    </div>
+  </div>
+</div>
+
+<div class="input-area">
+  <div class="input-wrapper">
+    <textarea
+      class="input-box"
+      id="input"
+      placeholder="Assign a task or ask anything"
+      rows="1"
+      onkeydown="handleKey(event)"
+      oninput="autoResize(this)"
+    ></textarea>
+    <button class="send-btn" id="sendBtn" onclick="sendMessage()">↑</button>
+  </div>
+</div>
+
+<script>
+const chat = document.getElementById('chat');
+const input = document.getElementById('input');
+const sendBtn = document.getElementById('sendBtn');
+const welcome = document.getElementById('welcome');
+let isStreaming = false;
+
+const toolIcons = {
+  'Bash': '>_',
+  'Read': '📄',
+  'Write': '📝',
+  'Edit': '✏️',
+  'Glob': '🔍',
+  'Grep': '🔎',
+  'WebFetch': '🌐',
+  'WebSearch': '🔎',
+  'Agent': '🤖',
+  'TaskCreate': '📋',
+};
+
+function getToolIcon(name) {
+  if (toolIcons[name]) return toolIcons[name];
+  if (name.startsWith('mcp__')) return '🔌';
+  return '🔧';
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 200) + 'px';
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+}
+
+function sendSuggestion(text) {
+  input.value = text;
+  sendMessage();
+}
+
+function scrollToBottom() {
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+function renderMarkdown(text) {
+  let html = escapeHtml(text);
+  html = html.replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>');
+  html = html.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
+  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  html = html.replace(/^- (.+)$/gm, '• $1');
+  html = html.replace(/\n\n/g, '</p><p>');
+  html = '<p>' + html + '</p>';
+  html = html.replace(/\n/g, '<br>');
+  return html;
+}
+
+async function newSession() {
+  await fetch('/api/new', { method: 'POST' });
+  chat.innerHTML = `
+    <div class="welcome" id="welcome">
+      <h2>What can I do for you?</h2>
+      <div class="suggestions">
+        <div class="suggestion" onclick="sendSuggestion('List all Rust files in this project')">📁 List Rust files</div>
+        <div class="suggestion" onclick="sendSuggestion('Read Cargo.toml and explain the dependencies')">📄 Read Cargo.toml</div>
+        <div class="suggestion" onclick="sendSuggestion('Count lines of code in the src directory')">📊 Count lines</div>
+        <div class="suggestion" onclick="sendSuggestion('What is my Rust version and OS?')">💻 System info</div>
+      </div>
+    </div>`;
+}
+
+async function sendMessage() {
+  const text = input.value.trim();
+  if (!text || isStreaming) return;
+
+  const w = document.getElementById('welcome');
+  if (w) w.remove();
+
+  chat.innerHTML += `<div class="message message-user"><div class="bubble">${escapeHtml(text)}</div></div>`;
+
+  input.value = '';
+  input.style.height = 'auto';
+  isStreaming = true;
+  sendBtn.disabled = true;
+  input.disabled = true;
+
+  const typingId = 'typing-' + Date.now();
+  chat.innerHTML += `<div class="message message-assistant" id="${typingId}"><div class="typing"><span></span><span></span><span></span></div></div>`;
+  scrollToBottom();
+
+  let accumulatedText = '';
+  let assistantDiv = null;
+  let textContentDiv = null;
+
+  try {
+    const resp = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: text }),
+    });
+
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const jsonStr = line.slice(6);
+        if (!jsonStr) continue;
+
+        let event;
+        try { event = JSON.parse(jsonStr); } catch { continue; }
+
+        const typingEl = document.getElementById(typingId);
+        if (typingEl) typingEl.remove();
+
+        if (!assistantDiv) {
+          assistantDiv = document.createElement('div');
+          assistantDiv.className = 'message message-assistant';
+          chat.appendChild(assistantDiv);
+        }
+
+        switch (event.type) {
+          case 'text':
+            accumulatedText += event.data.text;
+            if (!textContentDiv) {
+              textContentDiv = document.createElement('div');
+              textContentDiv.className = 'text-content';
+              assistantDiv.appendChild(textContentDiv);
+            }
+            textContentDiv.innerHTML = renderMarkdown(accumulatedText);
+            scrollToBottom();
+            break;
+
+          case 'tool_use': {
+            textContentDiv = null;
+            accumulatedText = '';
+            const inputStr = JSON.stringify(event.data.input || {});
+            const tc = document.createElement('div');
+            tc.className = 'tool-call';
+            tc.id = 'tool-' + event.data.id;
+            tc.innerHTML = `
+              <div class="tool-icon">${getToolIcon(event.data.name)}</div>
+              <span class="tool-name">${escapeHtml(event.data.name)}</span>
+              <span class="tool-input">${escapeHtml(inputStr)}</span>
+            `;
+            assistantDiv.appendChild(tc);
+            scrollToBottom();
+            break;
+          }
+
+          case 'tool_result': {
+            const toolCallEl = document.getElementById('tool-' + event.data.tool_use_id);
+            if (toolCallEl) {
+              const resultDiv = document.createElement('div');
+              resultDiv.className = 'tool-result-output';
+              const content = event.data.content || '';
+              const truncated = content.length > 500 ? content.substring(0, 500) + '...' : content;
+              resultDiv.innerHTML = `<pre>${escapeHtml(truncated)}</pre>`;
+              toolCallEl.insertAdjacentElement('afterend', resultDiv);
+              scrollToBottom();
+            }
+            break;
+          }
+
+          case 'thinking': {
+            const th = document.createElement('div');
+            th.className = 'thinking-block';
+            th.textContent = event.data.thinking;
+            assistantDiv.appendChild(th);
+            scrollToBottom();
+            break;
+          }
+
+          case 'result': {
+            const d = event.data;
+            const costStr = d.cost < 0.01 ? `$${d.cost.toFixed(4)}` : `$${d.cost.toFixed(2)}`;
+            const durStr = (d.duration_ms / 1000).toFixed(1) + 's';
+            const banner = document.createElement('div');
+            banner.className = 'result-banner';
+            banner.innerHTML = `
+              <span class="check">✅</span>
+              <span>Done</span>
+              <span class="stats">· ${costStr} · ${durStr} · ${d.input_tokens + d.output_tokens} tokens</span>
+            `;
+            assistantDiv.appendChild(banner);
+            scrollToBottom();
+            break;
+          }
+
+          case 'error': {
+            const errDiv = document.createElement('div');
+            errDiv.className = 'error-banner';
+            errDiv.textContent = '❌ ' + (event.data?.message || 'Unknown error');
+            assistantDiv.appendChild(errDiv);
+            scrollToBottom();
+            break;
+          }
+
+          case 'done':
+            break;
+        }
+      }
+    }
+  } catch (err) {
+    const typingEl = document.getElementById(typingId);
+    if (typingEl) typingEl.remove();
+    chat.innerHTML += `<div class="error-banner">❌ ${escapeHtml(err.message)}</div>`;
+  }
+
+  isStreaming = false;
+  sendBtn.disabled = false;
+  input.disabled = false;
+  input.focus();
+  scrollToBottom();
+}
+
+input.focus();
+</script>
+</body>
+</html>

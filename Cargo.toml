@@ -30,13 +30,45 @@ tokio = { version = "1", features = ["full", "test-util"] }
 tempfile = "3"
 
 [[example]]
-name = "simple_query"
-path = "examples/simple_query.rs"
+name = "01-simple-query"
+path = "examples/01-simple-query.rs"
 
 [[example]]
-name = "custom_tools"
-path = "examples/custom_tools.rs"
+name = "02-multi-tool"
+path = "examples/02-multi-tool.rs"
 
 [[example]]
-name = "multi_turn"
-path = "examples/multi_turn.rs"
+name = "03-multi-turn"
+path = "examples/03-multi-turn.rs"
+
+[[example]]
+name = "04-prompt-api"
+path = "examples/04-prompt-api.rs"
+
+[[example]]
+name = "05-custom-system-prompt"
+path = "examples/05-custom-system-prompt.rs"
+
+[[example]]
+name = "06-mcp-server"
+path = "examples/06-mcp-server.rs"
+
+[[example]]
+name = "07-custom-tools"
+path = "examples/07-custom-tools.rs"
+
+[[example]]
+name = "08-oneshot-query"
+path = "examples/08-oneshot-query.rs"
+
+[[example]]
+name = "09-subagents"
+path = "examples/09-subagents.rs"
+
+[[example]]
+name = "10-permissions"
+path = "examples/10-permissions.rs"
+
+[[example]]
+name = "web-chat"
+path = "examples/web/main.rs"
