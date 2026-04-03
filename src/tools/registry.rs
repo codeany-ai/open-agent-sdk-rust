@@ -1,6 +1,7 @@
 use crate::types::Tool;
 use std::collections::HashMap;
 use std::sync::Arc;
+use tokio::sync::RwLock;
 
 /// Registry of available tools.
 pub struct ToolRegistry {
@@ -44,10 +45,77 @@ impl ToolRegistry {
         registry.register(Arc::new(super::tasks::TaskListTool::new(
             task_store.clone(),
         )));
-        registry.register(Arc::new(super::tasks::TaskUpdateTool::new(task_store)));
+        registry.register(Arc::new(super::tasks::TaskUpdateTool::new(
+            task_store.clone(),
+        )));
+        registry.register(Arc::new(super::tasks::TaskStopTool::new(
+            task_store.clone(),
+        )));
+        registry.register(Arc::new(super::tasks::TaskOutputTool::new(task_store)));
 
         // Tool search
         registry.register(Arc::new(super::toolsearch::ToolSearchTool::default()));
+
+        // Notebook edit
+        registry.register(Arc::new(super::notebook_edit::NotebookEditTool));
+
+        // Inter-agent messaging
+        let mailbox = super::send_message::new_mailbox();
+        registry.register(Arc::new(super::send_message::SendMessageTool::new(mailbox)));
+
+        // Team tools
+        let team_store = super::team_tools::TeamStore::new();
+        registry.register(Arc::new(super::team_tools::TeamCreateTool::new(
+            team_store.clone(),
+        )));
+        registry.register(Arc::new(super::team_tools::TeamDeleteTool::new(team_store)));
+
+        // Plan mode tools
+        let plan_state = super::plan_tools::PlanState::new();
+        registry.register(Arc::new(super::plan_tools::EnterPlanModeTool::new(
+            plan_state.clone(),
+        )));
+        registry.register(Arc::new(super::plan_tools::ExitPlanModeTool::new(plan_state)));
+
+        // Worktree tools
+        let worktree_store = super::worktree_tools::new_worktree_store();
+        registry.register(Arc::new(super::worktree_tools::EnterWorktreeTool::new(
+            worktree_store.clone(),
+        )));
+        registry.register(Arc::new(super::worktree_tools::ExitWorktreeTool::new(
+            worktree_store,
+        )));
+
+        // Todo tool
+        let todo_store = super::todo_tool::TodoStore::new();
+        registry.register(Arc::new(super::todo_tool::TodoWriteTool::new(todo_store)));
+
+        // Cron tools
+        let cron_store = super::cron_tools::CronStore::new();
+        registry.register(Arc::new(super::cron_tools::CronCreateTool::new(
+            cron_store.clone(),
+        )));
+        registry.register(Arc::new(super::cron_tools::CronDeleteTool::new(
+            cron_store.clone(),
+        )));
+        registry.register(Arc::new(super::cron_tools::CronListTool::new(cron_store)));
+
+        // Config tool
+        let config_store = super::config_tool::ConfigStore::new();
+        registry.register(Arc::new(super::config_tool::ConfigTool::new(config_store)));
+
+        // LSP tool
+        registry.register(Arc::new(super::lsp_tool::LSPTool));
+
+        // MCP resource tools
+        let mcp_client: Arc<RwLock<Option<Arc<crate::mcp::McpClient>>>> =
+            Arc::new(RwLock::new(None));
+        registry.register(Arc::new(
+            super::mcp_resource_tools::ListMcpResourcesTool::new(mcp_client.clone()),
+        ));
+        registry.register(Arc::new(
+            super::mcp_resource_tools::ReadMcpResourceTool::new(mcp_client),
+        ));
 
         registry
     }

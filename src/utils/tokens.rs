@@ -19,10 +19,19 @@ pub fn estimate_messages_tokens(messages: &[Message]) -> u64 {
 /// Get context window size for a model.
 pub fn get_context_window_size(model: &str) -> u64 {
     match model {
+        // Anthropic models
         m if m.contains("opus") && m.contains("1m") => 1_000_000,
         m if m.contains("opus") => 200_000,
         m if m.contains("sonnet") => 200_000,
         m if m.contains("haiku") => 200_000,
+        // OpenAI models
+        m if m.starts_with("o1") => 200_000,
+        m if m.starts_with("o3") => 200_000,
+        m if m.starts_with("o4-mini") => 200_000,
+        m if m.starts_with("gpt-4o-mini") => 128_000,
+        m if m.starts_with("gpt-4o") => 128_000,
+        // DeepSeek models
+        m if m.starts_with("deepseek") => 128_000,
         _ => 200_000,
     }
 }
@@ -44,6 +53,7 @@ pub struct ModelPricing {
 /// Get pricing for a model.
 pub fn get_model_pricing(model: &str) -> ModelPricing {
     match model {
+        // Anthropic models
         m if m.contains("opus") => ModelPricing {
             input: 15.0,
             output: 75.0,
@@ -62,6 +72,51 @@ pub fn get_model_pricing(model: &str) -> ModelPricing {
             cache_read: 0.08,
             cache_write: 1.0,
         },
+        // OpenAI models
+        m if m.starts_with("gpt-4o-mini") => ModelPricing {
+            input: 0.15,
+            output: 0.60,
+            cache_read: 0.075,
+            cache_write: 0.15,
+        },
+        m if m.starts_with("gpt-4o") => ModelPricing {
+            input: 2.50,
+            output: 10.0,
+            cache_read: 1.25,
+            cache_write: 2.50,
+        },
+        m if m.starts_with("o1") => ModelPricing {
+            input: 15.0,
+            output: 60.0,
+            cache_read: 7.5,
+            cache_write: 15.0,
+        },
+        m if m.starts_with("o3") => ModelPricing {
+            input: 10.0,
+            output: 40.0,
+            cache_read: 5.0,
+            cache_write: 10.0,
+        },
+        m if m.starts_with("o4-mini") => ModelPricing {
+            input: 1.10,
+            output: 4.40,
+            cache_read: 0.55,
+            cache_write: 1.10,
+        },
+        // DeepSeek models
+        m if m.starts_with("deepseek-reasoner") => ModelPricing {
+            input: 0.55,
+            output: 2.19,
+            cache_read: 0.14,
+            cache_write: 0.55,
+        },
+        m if m.starts_with("deepseek-chat") => ModelPricing {
+            input: 0.27,
+            output: 1.10,
+            cache_read: 0.07,
+            cache_write: 0.27,
+        },
+        // Default (sonnet-like pricing)
         _ => ModelPricing {
             input: 3.0,
             output: 15.0,

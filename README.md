@@ -7,13 +7,17 @@ Also available in [TypeScript](https://github.com/codeany-ai/open-agent-sdk-type
 ## Features
 
 - **Agent Loop** — Streaming agentic loop with tool execution, multi-turn conversations, and cost tracking
-- **Built-in Tools** — Bash, Read, Write, Edit, Glob, Grep, WebFetch, WebSearch, Agent (subagents), AskUser, TaskTools, ToolSearch
+- **25+ Built-in Tools** — Bash, Read, Write, Edit, Glob, Grep, WebFetch, WebSearch, Agent (subagents), AskUser, Tasks, Teams, Plans, Worktrees, Todos, Cron, LSP, Config, MCP Resources, ToolSearch
+- **Session Persistence** — Save, load, fork, and resume conversations across sessions
 - **MCP Support** — Connect to MCP servers via stdio, HTTP, and SSE transports
 - **Permission System** — Configurable tool approval with allow/deny rules and filesystem path validation
-- **Hook System** — Pre/post tool-use hooks, post-sampling hooks, structured output enforcement
+- **Hook System** — 20+ hook events: PreToolUse, PostToolUse, SessionStart/End, SubagentStart/Stop, TaskCreated/Completed, FileChanged, PreCompact/PostCompact, and more
 - **Extended Thinking** — Support for extended thinking with budget tokens
-- **Cost Tracking** — Per-model token usage, API/tool duration, code change stats
+- **Cost Tracking** — Per-model token usage and pricing for Anthropic, OpenAI, and DeepSeek models
 - **Custom Tools** — Implement the `Tool` trait to add your own tools
+- **Auto-Compaction** — Multi-tier context compression (micro-compact, LLM summarization, image stripping)
+- **Sandbox Config** — Network and filesystem restrictions for tool execution
+- **File State Cache** — LRU cache for file state tracking and staleness detection
 
 ## Quick Start
 
@@ -127,6 +131,24 @@ let agent = Agent::new(AgentOptions {
 }).await.unwrap();
 ```
 
+## Session Persistence
+
+```rust
+use open_agent_sdk::session::*;
+
+// Save current session
+save_session(&session_data).await.unwrap();
+
+// List all sessions
+let sessions = list_sessions().await.unwrap();
+
+// Resume a session
+let data = load_session("session-id").await.unwrap();
+
+// Fork a session
+let new_id = fork_session("session-id").await.unwrap();
+```
+
 ## MCP Servers
 
 ```rust
@@ -145,6 +167,32 @@ let agent = Agent::new(AgentOptions {
 }).await.unwrap();
 ```
 
+## Built-in Tools
+
+| Tool | Description | Read-Only |
+|------|-------------|-----------|
+| **Bash** | Execute shell commands | No |
+| **Read** | Read files with line numbers | Yes |
+| **Write** | Create/overwrite files | No |
+| **Edit** | String replacement in files | No |
+| **Glob** | File pattern matching | Yes |
+| **Grep** | Regex search (ripgrep) | Yes |
+| **NotebookEdit** | Edit Jupyter notebook cells | No |
+| **WebFetch** | Fetch URL content | Yes |
+| **WebSearch** | Web search (pluggable) | Yes |
+| **AskUserQuestion** | Interactive user prompts | No |
+| **SendMessage** | Inter-agent messaging | No |
+| **TeamCreate/Delete** | Multi-agent team management | No |
+| **EnterPlanMode/ExitPlanMode** | Structured planning mode | No |
+| **EnterWorktree/ExitWorktree** | Git worktree isolation | No |
+| **TodoWrite** | Session todo list | No |
+| **TaskCreate/Get/List/Update/Stop/Output** | Task tracking (6 tools) | Mixed |
+| **CronCreate/Delete/List** | Scheduled task management | Mixed |
+| **Config** | Session configuration | Mixed |
+| **LSP** | Language Server Protocol operations | Yes |
+| **ListMcpResources/ReadMcpResource** | MCP resource access | Yes |
+| **ToolSearch** | Discover available tools | Yes |
+
 ## Architecture
 
 ```
@@ -152,15 +200,16 @@ open-agent-sdk-rust/
 ├── src/
 │   ├── agent/          # Agent loop, query engine, options
 │   ├── api/            # Messages API client (streaming + non-streaming)
-│   ├── types/          # Core types: Message, Tool, ContentBlock, MCP
-│   ├── tools/          # Built-in tool implementations + registry + executor
+│   ├── types/          # Core types: Message, Tool, ContentBlock, MCP, Sandbox
+│   ├── tools/          # 25+ built-in tool implementations + registry + executor
 │   ├── mcp/            # MCP client (stdio, HTTP, SSE) + tool wrapping
 │   ├── permissions/    # Permission rules, filesystem validation
-│   ├── hooks/          # Pre/post tool-use hooks
-│   ├── costtracker/    # Token usage and cost tracking
+│   ├── hooks/          # 20+ hook events with pre/post tool-use lifecycle
+│   ├── costtracker/    # Token usage and cost tracking (Anthropic, OpenAI, DeepSeek)
 │   ├── context/        # System/user context injection (git status, AGENT.md)
-│   └── utils/          # Token estimation, retry, messages, compaction
-├── tests/              # Comprehensive test suite
+│   ├── session/        # Session persistence (save, load, fork, resume)
+│   └── utils/          # Token estimation, retry, messages, compaction, file cache
+├── tests/              # Comprehensive test suite (116 tests)
 └── examples/           # 11 runnable examples + web chat UI
 ```
 

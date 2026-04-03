@@ -1,5 +1,7 @@
 pub mod askuser;
 pub mod bash;
+pub mod config_tool;
+pub mod cron_tools;
 pub mod diff;
 pub mod executor;
 pub mod fileedit;
@@ -7,11 +9,19 @@ pub mod fileread;
 pub mod filewrite;
 pub mod glob_tool;
 pub mod grep;
+pub mod lsp_tool;
+pub mod mcp_resource_tools;
+pub mod notebook_edit;
+pub mod plan_tools;
 pub mod registry;
+pub mod send_message;
 pub mod tasks;
+pub mod team_tools;
+pub mod todo_tool;
 pub mod toolsearch;
 pub mod webfetch;
 pub mod websearch;
+pub mod worktree_tools;
 
 pub use executor::*;
 pub use registry::*;

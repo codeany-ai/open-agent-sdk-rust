@@ -21,6 +21,7 @@ async fn test_pre_tool_use_hook_allow() {
                     HookOutput {
                         blocked: false,
                         message: None,
+                        ..Default::default()
                     }
                 })
             }),
@@ -42,6 +43,7 @@ async fn test_pre_tool_use_hook_block() {
                     HookOutput {
                         blocked: true,
                         message: Some("Bash is blocked".to_string()),
+                        ..Default::default()
                     }
                 })
             }),
@@ -68,6 +70,7 @@ async fn test_hook_matcher_wildcard() {
                     HookOutput {
                         blocked: true,
                         message: Some("MCP blocked".to_string()),
+                        ..Default::default()
                     }
                 })
             }),
@@ -94,6 +97,7 @@ async fn test_hook_matcher_pipe_or() {
                     HookOutput {
                         blocked: true,
                         message: None,
+                        ..Default::default()
                     }
                 })
             }),

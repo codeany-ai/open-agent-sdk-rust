@@ -143,6 +143,34 @@ pub enum SDKMessage {
         messages: Vec<Message>,
     },
 
+    #[serde(rename = "partial_message")]
+    PartialMessage { text: String },
+
+    #[serde(rename = "compact_boundary")]
+    CompactBoundary {
+        #[serde(default)]
+        summary: String,
+    },
+
+    #[serde(rename = "status")]
+    Status { message: String },
+
+    #[serde(rename = "task_notification")]
+    TaskNotification {
+        task_id: String,
+        status: String,
+        #[serde(default)]
+        message: Option<String>,
+    },
+
+    #[serde(rename = "rate_limit")]
+    RateLimit {
+        #[serde(default)]
+        retry_after_ms: u64,
+        #[serde(default)]
+        message: String,
+    },
+
     #[serde(rename = "progress")]
     Progress { message: String },
 

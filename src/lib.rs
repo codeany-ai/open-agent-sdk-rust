@@ -24,6 +24,7 @@ pub mod costtracker;
 pub mod hooks;
 pub mod mcp;
 pub mod permissions;
+pub mod session;
 pub mod tools;
 pub mod types;
 pub mod utils;
@@ -32,12 +33,25 @@ pub mod utils;
 pub use agent::{Agent, AgentOptions, SubagentDefinition};
 pub use api::ApiClient;
 pub use costtracker::CostTracker;
-pub use hooks::{HookConfig, HookEvent, HookFn, HookInput, HookOutput, HookRule};
+pub use hooks::{
+    HookConfig, HookEvent, HookFn, HookInput, HookNotification, HookOutput, HookRule,
+    NotificationLevel, PermissionBehavior, PermissionUpdate,
+};
 pub use mcp::McpClient;
 pub use tools::ToolRegistry;
 pub use types::{
     ApiToolParam, CanUseToolFn, ContentBlock, Message, MessageRole, PermissionDecision,
     PermissionMode, QueryResult, SDKMessage, ThinkingConfig, Tool, ToolError, ToolInputSchema,
-    ToolResult, ToolResultContent, ToolUseContext, Usage,
+    SandboxFilesystemConfig, SandboxNetworkConfig, SandboxSettings, ToolResult, ToolResultContent,
+    ToolUseContext, Usage,
 };
+pub use session::{
+    append_to_session, delete_session, fork_session, get_session_info, get_session_messages,
+    list_sessions, load_session, new_metadata, rename_session, save_session, tag_session,
+    SessionData, SessionMetadata,
+};
+pub use utils::compact::{
+    build_compaction_prompt, compact_conversation, strip_images_from_messages,
+};
+pub use utils::file_cache::FileStateCache;
 pub use utils::tokens::{estimate_cost, estimate_tokens};

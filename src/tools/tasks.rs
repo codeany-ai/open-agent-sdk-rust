@@ -30,6 +30,8 @@ pub struct Task {
     pub description: Option<String>,
     #[serde(default)]
     pub metadata: HashMap<String, Value>,
+    #[serde(default)]
+    pub output: Option<String>,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -118,6 +120,7 @@ impl Tool for TaskCreateTool {
                 .get("description")
                 .and_then(|d| d.as_str())
                 .map(String::from),
+            output: None,
             metadata: HashMap::new(),
             created_at: now.clone(),
             updated_at: now,
@@ -286,6 +289,10 @@ impl Tool for TaskUpdateTool {
                     "owner".to_string(),
                     json!({ "type": "string", "description": "New task owner" }),
                 ),
+                (
+                    "output".to_string(),
+                    json!({ "type": "string", "description": "Task output/result" }),
+                ),
             ]),
             required: vec!["id".to_string()],
             additional_properties: Some(false),
@@ -316,9 +323,128 @@ impl Tool for TaskUpdateTool {
                 if let Some(owner) = input.get("owner").and_then(|o| o.as_str()) {
                     task.owner = Some(owner.to_string());
                 }
+                if let Some(output) = input.get("output").and_then(|o| o.as_str()) {
+                    task.output = Some(output.to_string());
+                }
                 task.updated_at = chrono::Utc::now().to_rfc3339();
 
                 Ok(ToolResult::text(format!("Updated task: {}", id)))
+            }
+            None => Ok(ToolResult::error(format!("Task not found: {}", id))),
+        }
+    }
+}
+
+// --- TaskStopTool ---
+
+pub struct TaskStopTool {
+    store: TaskStore,
+}
+
+impl TaskStopTool {
+    pub fn new(store: TaskStore) -> Self {
+        Self { store }
+    }
+}
+
+#[async_trait]
+impl Tool for TaskStopTool {
+    fn name(&self) -> &str {
+        "TaskStop"
+    }
+
+    fn description(&self) -> &str {
+        "Stop/cancel a running task."
+    }
+
+    fn input_schema(&self) -> ToolInputSchema {
+        ToolInputSchema {
+            schema_type: "object".to_string(),
+            properties: HashMap::from([
+                (
+                    "id".to_string(),
+                    json!({ "type": "string", "description": "Task ID to stop" }),
+                ),
+                (
+                    "reason".to_string(),
+                    json!({ "type": "string", "description": "Reason for stopping" }),
+                ),
+            ]),
+            required: vec!["id".to_string()],
+            additional_properties: Some(false),
+        }
+    }
+
+    async fn call(&self, input: Value, _context: &ToolUseContext) -> Result<ToolResult, ToolError> {
+        let id = input
+            .get("id")
+            .and_then(|i| i.as_str())
+            .ok_or_else(|| ToolError::InvalidInput("Missing 'id'".to_string()))?;
+
+        let mut tasks = self.store.tasks.write().await;
+        match tasks.get_mut(id) {
+            Some(task) => {
+                task.status = TaskStatus::Cancelled;
+                task.updated_at = chrono::Utc::now().to_rfc3339();
+                if let Some(reason) = input.get("reason").and_then(|r| r.as_str()) {
+                    task.output = Some(format!("Stopped: {}", reason));
+                }
+                Ok(ToolResult::text(format!("Task stopped: {}", id)))
+            }
+            None => Ok(ToolResult::error(format!("Task not found: {}", id))),
+        }
+    }
+}
+
+// --- TaskOutputTool ---
+
+pub struct TaskOutputTool {
+    store: TaskStore,
+}
+
+impl TaskOutputTool {
+    pub fn new(store: TaskStore) -> Self {
+        Self { store }
+    }
+}
+
+#[async_trait]
+impl Tool for TaskOutputTool {
+    fn name(&self) -> &str {
+        "TaskOutput"
+    }
+
+    fn description(&self) -> &str {
+        "Get the output/result of a task."
+    }
+
+    fn input_schema(&self) -> ToolInputSchema {
+        ToolInputSchema {
+            schema_type: "object".to_string(),
+            properties: HashMap::from([(
+                "id".to_string(),
+                json!({ "type": "string", "description": "Task ID" }),
+            )]),
+            required: vec!["id".to_string()],
+            additional_properties: Some(false),
+        }
+    }
+
+    fn is_read_only(&self, _input: &Value) -> bool {
+        true
+    }
+
+    async fn call(&self, input: Value, _context: &ToolUseContext) -> Result<ToolResult, ToolError> {
+        let id = input
+            .get("id")
+            .and_then(|i| i.as_str())
+            .ok_or_else(|| ToolError::InvalidInput("Missing 'id'".to_string()))?;
+
+        let tasks = self.store.tasks.read().await;
+        match tasks.get(id) {
+            Some(task) => {
+                let output = task.output.as_deref().unwrap_or("(no output yet)");
+                Ok(ToolResult::text(output))
             }
             None => Ok(ToolResult::error(format!("Task not found: {}", id))),
         }

@@ -51,6 +51,26 @@ pub struct AgentOptions {
     pub hooks: Option<HookConfig>,
     /// Custom HTTP headers for API requests.
     pub custom_headers: HashMap<String, String>,
+    /// Resume the most recent session in the current working directory.
+    pub continue_session: Option<bool>,
+    /// Resume a specific session by ID.
+    pub resume: Option<String>,
+    /// Fork instead of continuing a session.
+    pub fork_session: Option<bool>,
+    /// Control whether the session is persisted to disk.
+    pub persist_session: Option<bool>,
+    /// Explicit session ID to use (instead of auto-generating one).
+    pub session_id: Option<String>,
+    /// Effort level for reasoning: "low", "medium", "high", "max".
+    pub effort: Option<String>,
+    /// Fallback model if primary is unavailable.
+    pub fallback_model: Option<String>,
+    /// Sandbox configuration for restricting tool execution.
+    pub sandbox: Option<SandboxSettings>,
+    /// Enable debug mode.
+    pub debug: Option<bool>,
+    /// Additional working directories.
+    pub additional_directories: Option<Vec<String>>,
 }
 
 impl Default for AgentOptions {
@@ -76,6 +96,16 @@ impl Default for AgentOptions {
             json_schema: None,
             hooks: None,
             custom_headers: HashMap::new(),
+            continue_session: None,
+            resume: None,
+            fork_session: None,
+            persist_session: None,
+            session_id: None,
+            effort: None,
+            fallback_model: None,
+            sandbox: None,
+            debug: None,
+            additional_directories: None,
         }
     }
 }

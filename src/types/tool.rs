@@ -182,6 +182,39 @@ pub enum ToolError {
     Aborted,
 }
 
+/// Sandbox configuration for restricting tool execution.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct SandboxSettings {
+    /// Whether sandboxing is enabled.
+    #[serde(default)]
+    pub enabled: bool,
+    /// Network restrictions.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub network: Option<SandboxNetworkConfig>,
+    /// Filesystem restrictions.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub filesystem: Option<SandboxFilesystemConfig>,
+}
+
+/// Network configuration for the sandbox.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct SandboxNetworkConfig {
+    /// Domains allowed for network access.
+    #[serde(default)]
+    pub allowed_domains: Vec<String>,
+}
+
+/// Filesystem configuration for the sandbox.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct SandboxFilesystemConfig {
+    /// Paths where writes are denied.
+    #[serde(default)]
+    pub deny_write: Vec<String>,
+    /// Paths where reads are denied.
+    #[serde(default)]
+    pub deny_read: Vec<String>,
+}
+
 /// Permission mode for controlling tool access.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
