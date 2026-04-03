@@ -6,6 +6,7 @@ Also available in [TypeScript](https://github.com/codeany-ai/open-agent-sdk-type
 
 ## Features
 
+- **Multi-Provider** — Supports both Anthropic Messages API and OpenAI Chat Completions API, with auto-detection by model name
 - **Agent Loop** — Streaming agentic loop with tool execution, multi-turn conversations, and cost tracking
 - **25+ Built-in Tools** — Bash, Read, Write, Edit, Glob, Grep, WebFetch, WebSearch, Agent (subagents), AskUser, Tasks, Teams, Plans, Worktrees, Todos, Cron, LSP, Config, MCP Resources, ToolSearch
 - **Session Persistence** — Save, load, fork, and resume conversations across sessions
@@ -193,13 +194,38 @@ let agent = Agent::new(AgentOptions {
 | **ListMcpResources/ReadMcpResource** | MCP resource access | Yes |
 | **ToolSearch** | Discover available tools | Yes |
 
+## Multi-Provider Support
+
+The SDK automatically detects which API format to use based on the model name:
+
+| Models | API Format | Auto-detected |
+|--------|-----------|---------------|
+| Claude (sonnet, opus, haiku) | Anthropic Messages | Yes |
+| GPT-4o, O1, O3, O4 | OpenAI Chat Completions | Yes |
+| DeepSeek, Qwen, Mistral | OpenAI Chat Completions | Yes |
+| LLaMA, Gemma, Gemini, Yi, GLM | OpenAI Chat Completions | Yes |
+
+Override with `CODEANY_API_TYPE=openai-completions` or `CODEANY_API_TYPE=anthropic-messages`.
+
+Works with any OpenAI-compatible endpoint (OpenRouter, vLLM, Ollama, LiteLLM, etc.):
+
+```bash
+export CODEANY_BASE_URL=https://openrouter.ai/api
+export CODEANY_API_KEY=your-key
+export CODEANY_MODEL=anthropic/claude-sonnet-4
+cargo run --example 01-simple-query
+```
+
 ## Architecture
 
 ```
 open-agent-sdk-rust/
 ├── src/
 │   ├── agent/          # Agent loop, query engine, options
-│   ├── api/            # Messages API client (streaming + non-streaming)
+│   ├── api/            # Multi-provider API abstraction
+│   │   ├── provider.rs # LLMProvider trait + auto-detection
+│   │   ├── anthropic.rs# Anthropic Messages API (SSE streaming)
+│   │   └── openai.rs   # OpenAI Chat Completions API (SSE streaming)
 │   ├── types/          # Core types: Message, Tool, ContentBlock, MCP, Sandbox
 │   ├── tools/          # 25+ built-in tool implementations + registry + executor
 │   ├── mcp/            # MCP client (stdio, HTTP, SSE) + tool wrapping
@@ -217,14 +243,15 @@ open-agent-sdk-rust/
 
 Environment variables:
 
-| Variable                     | Description                                  |
-| ---------------------------- | -------------------------------------------- |
-| `CODEANY_API_KEY`            | API key (required)                           |
-| `CODEANY_MODEL`              | Default model (default: `sonnet-4-6`)        |
-| `CODEANY_BASE_URL`           | API base URL override                        |
-| `CODEANY_CUSTOM_HEADERS`     | Custom headers (comma-separated `key:value`) |
-| `API_TIMEOUT_MS`             | API request timeout in ms                    |
-| `HTTPS_PROXY` / `HTTP_PROXY` | Proxy URL                                    |
+| Variable                     | Description                                           |
+| ---------------------------- | ----------------------------------------------------- |
+| `CODEANY_API_KEY`            | API key (required)                                    |
+| `CODEANY_MODEL`              | Default model (default: `sonnet-4-6`)                 |
+| `CODEANY_BASE_URL`           | API base URL override                                 |
+| `CODEANY_API_TYPE`           | Force API format: `anthropic-messages` or `openai-completions` |
+| `CODEANY_CUSTOM_HEADERS`     | Custom headers (comma-separated `key:value`)          |
+| `API_TIMEOUT_MS`             | API request timeout in ms                             |
+| `HTTPS_PROXY` / `HTTP_PROXY` | Proxy URL                                             |
 
 ## Links
 
