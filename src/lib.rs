@@ -31,7 +31,7 @@ pub mod utils;
 
 // Re-export commonly used types
 pub use agent::{Agent, AgentOptions, SubagentDefinition};
-pub use api::ApiClient;
+pub use api::{ApiClient, ApiType, LLMProvider, ProviderResponse};
 pub use costtracker::CostTracker;
 pub use hooks::{
     HookConfig, HookEvent, HookFn, HookInput, HookNotification, HookOutput, HookRule,

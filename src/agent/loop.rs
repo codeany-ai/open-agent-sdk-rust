@@ -26,11 +26,7 @@ pub(crate) async fn run_loop(
     let tool_context = ToolUseContext::new(cwd.to_string());
 
     // Build system prompt blocks
-    let system_blocks = context::build_system_blocks(
-        cwd,
-        system_prompt,
-        append_system_prompt,
-    );
+    let system_blocks = context::build_system_blocks(cwd, system_prompt, append_system_prompt);
 
     // Build tool definitions for API
     let api_tools: Vec<ApiToolParam> = registry
@@ -53,7 +49,14 @@ pub(crate) async fn run_loop(
     // Send system message
     let _ = tx
         .send(SDKMessage::System {
-            message: format!("Agent started with {} tools", api_tools.len()),
+            message: format!(
+                "Agent started with {} tools ({})",
+                api_tools.len(),
+                match api_client.api_type() {
+                    crate::api::ApiType::AnthropicMessages => "anthropic",
+                    crate::api::ApiType::OpenAICompletions => "openai",
+                }
+            ),
         })
         .await;
 
@@ -93,15 +96,17 @@ pub(crate) async fn run_loop(
         // Normalize messages
         let normalized = msg_utils::normalize_messages(&messages);
 
-        // Call the API with retry
+        // Call the API via provider abstraction with retry
         let api_client_ref = &api_client;
         let system_blocks_ref = &system_blocks;
         let api_tools_ref = &api_tools;
         let thinking_ref = &thinking;
 
+        let start = std::time::Instant::now();
+
         let response = retry::with_retry(&retry_config, || async {
             api_client_ref
-                .create_message_stream(
+                .create_message(
                     &normalized,
                     Some(system_blocks_ref.clone()),
                     Some(api_tools_ref.clone()),
@@ -112,7 +117,7 @@ pub(crate) async fn run_loop(
         })
         .await;
 
-        let response = match response {
+        let provider_response = match response {
             Ok(r) => r,
             Err(e) => {
                 if retry::is_auth_error(&e) {
@@ -122,15 +127,15 @@ pub(crate) async fn run_loop(
             }
         };
 
-        // Parse the streaming response
-        let start = std::time::Instant::now();
-        let (assistant_msg, usage, stop_reason) = ApiClient::parse_stream(response)
-            .await
-            .map_err(|e| format!("Stream parse error: {}", e))?;
-
         let api_duration = start.elapsed().as_millis() as u64;
         cost_tracker.add_api_duration(api_duration).await;
-        cost_tracker.add_usage(api_client.model(), &usage).await;
+        cost_tracker
+            .add_usage(api_client.model(), &provider_response.usage)
+            .await;
+
+        let usage = &provider_response.usage;
+        let assistant_msg = provider_response.message;
+        let stop_reason = provider_response.stop_reason;
 
         // Accumulate usage
         total_usage.input_tokens += usage.input_tokens;
@@ -158,13 +163,8 @@ pub(crate) async fn run_loop(
 
         // Execute tools
         let tool_start = std::time::Instant::now();
-        let results = tools::execute_tools(
-            &assistant_msg,
-            &registry,
-            &tool_context,
-            can_use_tool,
-        )
-        .await;
+        let results =
+            tools::execute_tools(&assistant_msg, &registry, &tool_context, can_use_tool).await;
         let tool_duration = tool_start.elapsed().as_millis() as u64;
         cost_tracker.add_tool_duration(tool_duration).await;
 
@@ -209,7 +209,7 @@ pub(crate) async fn run_loop(
             usage: total_usage,
             num_turns,
             cost_usd: total_cost,
-            duration_ms: 0, // Will be set by caller
+            duration_ms: 0,
             messages: messages.clone(),
         })
         .await;
